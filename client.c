@@ -26,7 +26,7 @@ void showMainMenu_actions_client()
 }
 void showMainMenu_actions_provider()
 {
-    printf("To display all of your available products type 5\nTo add a product type 6\nTo delete a product type 10\nTo sign out type 11\nTo exit the app type 0\nTo delete your account type 14\n");
+    printf("To display your products type 5\nTo add a product type 6\nTo delete a product type 10\nTo sign out type 11\nTo exit the app type 0\nTo delete your account type 14\n");
 }
 
 void chooseTheTypeofMenu(int option)
@@ -478,7 +478,7 @@ int main (int argc, char *argv[])
                     printf("%s\n", message_server);
                     menuoption = 1;
                     break;
-                }       
+                }   
             }
         }
     }

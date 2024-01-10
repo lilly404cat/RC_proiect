@@ -898,7 +898,8 @@ void raspunde(int cl, int idThread)
                         printf("%d - here you can say if is provider", isProv);
                         printf ("[Thread %d]Mesajul a fost trasmis cu succes.\n",idThread);
                         printf("[Thread %d] client wants to see the products\n", idThread);
-                        if(send(cl, "You did not select a provider. Select one to display It's products\n", sizeof("You did not select a provider. Select one to display It's products\n"), 0) <= 0) 
+                        snprintf(message, sizeof(message), "You did not select a provider. Select one to display It's products");
+                        if(send(cl,message, sizeof(message), 0) <= 0) 
                         {
                             perror("[client]Error sending message to client \n");
                         }
@@ -1271,6 +1272,29 @@ void raspunde(int cl, int idThread)
                     printf ("[Thread %d]Mesajul a fost trasmis cu succes.\n",idThread);
                     if(isincart)
                     {
+                        snprintf(query, sizeof(query), "SELECT id_produs, prod_name FROM history WHERE id_ben = %d and status = 1;", id_user);
+                        if (mysql_query(con, query) != 0) 
+                        {
+                            fprintf(stderr, "Error: %s\n", mysql_error(con));
+                        }
+                        MYSQL_RES *result;
+                        result = mysql_store_result(con);
+                        if (result == NULL) 
+                        {
+                            fprintf(stderr, "Error: %s\n", mysql_error(con));
+                        }
+                        else 
+                        {
+                            my_ulonglong num_rows = mysql_num_rows(result);
+                            if (num_rows == 0) 
+                            { 
+                                iszero = 0;
+                            }
+                            else 
+                            {
+                                iszero = 1;
+                            }
+                        }
                         if(iszero == 0)
                         {
                             snprintf(message, sizeof(message), "you have no product to delete");
@@ -1710,7 +1734,7 @@ void raspunde(int cl, int idThread)
                     }
                     printf("%s aici e string de la client\n", provider_name);
                     provider_name[strcspn(provider_name, "\n")] = '\0';
-                    snprintf(query, sizeof(query), "SELECT id_user , user_name FROM users WHERE UPPER(REPLACE(user_name, ' ', '')) like CONCAT('%', UPPER(REPLACE('%s', ' ' , '')), '%');", provider_name);
+                    snprintf(query, sizeof(query), "SELECT id_user , user_name FROM users WHERE UPPER(REPLACE(user_name, ' ', '')) like CONCAT('%', UPPER(REPLACE('%s', ' ' , '')), '%') and isProvider = 1;", provider_name);
                     printf("%s", query);
                     if (mysql_query(con, query) != 0) 
                     {
@@ -1743,7 +1767,7 @@ void raspunde(int cl, int idThread)
                         mysql_free_result(result);
                         snprintf(message, sizeof(message), "These are the markets ant restaurants we found:\n %s", product_buffer);
                         printf("%s", product_buffer);
-                        if(strlen(message) < 40)
+                        if(strlen(message) < 52)
                         {
                             snprintf(message, sizeof(message), "We found no markets or restaurants with this name. Try something else!");
                         }
