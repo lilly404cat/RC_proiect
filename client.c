@@ -78,9 +78,9 @@ int signup()
         {
             perror("[client]Error recieving message from server \n");
         }
-        printf("%s1111\n", message);
+        printf("%s\n", message);
     }
-    printf("\n%d\n", isProv);
+    //printf("\n%d\n", isProv);
     return isProv;
 }
 
@@ -95,7 +95,7 @@ int signin()
     {
         memset(si_method, 0, sizeof(si_method));
         read(0, si_method, sizeof(si_method));
-        printf("%s\n", si_method);
+        //printf("%s\n", si_method);
         if(send(socked_desc, si_method, sizeof(si_method), 0) <= 0) 
         {
             fprintf(stderr, "[client]Error sending to server username \n");
@@ -109,17 +109,17 @@ int signin()
             break;
     }
     if(recv(socked_desc, message_server, sizeof(message_server), 0) <= 0) 
-        {
-            perror("[client]Error recieving message from server \n");
-        }
-    printf("%sGreat!\n", message_server);
-    printf("Enter password (max 39 char): \n");
+    {
+        perror("[client]Error recieving message from server \n");
+    }
+    printf("%s Great!\n", message_server);
+    printf("Enter password : \n");
     memset(message_server, 0, sizeof(message_server));
     memset(password, 0, sizeof(password));
     while(1)
     {
         read(0, password, sizeof(password));
-        printf("%s\n", password);
+        //printf("%s\n", password);
         if(send(socked_desc, password, sizeof(password), 0) <= 0) 
         {
             fprintf(stderr, "[client]Error sending to server \n");
@@ -130,20 +130,20 @@ int signin()
         }
         printf("%s\n", message_server);
         if(strstr(message_server, "Your")) 
-                    break;
+            break;
     }
     if(recv(socked_desc, message_server, sizeof(message_server), 0) <= 0) 
     {
         perror("[client]Error recieving message from server \n");
     }
-    sleep(1);
+    // sleep(1);
     printf("%s\n", message_server);
     memset(message_server, 0, sizeof(message_server));
     if(recv(socked_desc, &isProv, sizeof(int), 0) <= 0) 
     {
         perror("[Cleint]Eroare la receive() from server.\n");
     }
-    printf("%d", isProv);
+    //printf("%d", isProv);
     printf ("[Client]Mesajul a fost primit cu succes.\n");
     return isProv;
 }
@@ -187,7 +187,7 @@ int main (int argc, char *argv[])
         chooseTheTypeofMenu(menuoption); 
         read(0, buf, sizeof(buf));
         nr=atoi(buf);
-        printf("[client] Am citit %d\n",nr);
+        //printf("[client] Am citit %d\n",nr);
         if(send(socked_desc, &nr, sizeof(int), 0) <= 0) 
         {
             perror("[client]Eroare la send() spre server.\n");
@@ -204,7 +204,7 @@ int main (int argc, char *argv[])
         if(nr == 2)
         {
             isProv = signup();
-            printf("\n%d\n", isProv);
+            //printf("\n%d\n", isProv);
             if(isProv == 0)
                 menuoption = 2;
             else 
@@ -214,7 +214,7 @@ int main (int argc, char *argv[])
         else if(nr == 3)
         {
             isProv = signin();
-            printf("\n%d\n", isProv);
+            //printf("\n%d\n", isProv);
             if(isProv == 0)
                 menuoption = 2;
             else 
@@ -243,7 +243,7 @@ int main (int argc, char *argv[])
                 bzero(optionstr, sizeof(optionstr));
                 read(0, optionstr, sizeof(optionstr));
                 int option=atoi(optionstr);
-                printf("%d\n", option);
+                //printf("%d\n", option);
                 if(send(socked_desc, &option, sizeof(int), 0) <= 0) 
                 {
                     perror("[client]Eroare la send() spre server.\n");
@@ -277,7 +277,7 @@ int main (int argc, char *argv[])
                 perror("[client]Error recieving message from server \n");
             }
             printf("%s\n", message_server);
-            printf("\n");
+            //printf("\n");
         }
         else if(nr == 6) 
         {
@@ -318,7 +318,7 @@ int main (int argc, char *argv[])
                 printf("%s\n\n", message_server);
                 if(strstr(message_server, "We"))
                 {
-                    printf("a intrat in if\n");
+                    //printf("a intrat in if\n");
                     break;
                 }
             }
@@ -338,7 +338,7 @@ int main (int argc, char *argv[])
                 perror("[client]Error recieving message from server \n");
             }
             printf("%s\n", message_server);
-            printf("\n");
+            //printf("\n");
         }
         else if(nr == 10)
         {
@@ -376,7 +376,7 @@ int main (int argc, char *argv[])
                 }
                 bzero(product_name, sizeof(product_name));
                 read(0, product_name, sizeof(product_name));
-                write(1, product_name, sizeof(product_name));
+                //write(1, product_name, sizeof(product_name));
                 if(send(socked_desc, product_name, sizeof(product_name), 0) <= 0) 
                 {
                     perror("[client]Eroare la send() spre server.\n");
@@ -400,7 +400,7 @@ int main (int argc, char *argv[])
             product_name[0] = '\0';
             fflush(stdin);
             read(0, product_name, sizeof(product_name));
-            printf("%s\n", product_name);
+            //printf("%s\n", product_name);
             if(send(socked_desc, product_name, sizeof(product_name), 0) <= 0) 
             {
                 perror("[client]Eroare la send() spre server.\n");
@@ -421,7 +421,7 @@ int main (int argc, char *argv[])
             product_name[0] = '\0';
             fflush(stdin);
             read(0, product_name, sizeof(product_name));
-            printf("%s inpit\n", product_name);
+            //printf("%s inpit\n", product_name);
             if(send(socked_desc, product_name, sizeof(product_name), 0) <= 0) 
             {
                 perror("[client]Eroare la send() spre server.\n");
@@ -447,7 +447,7 @@ int main (int argc, char *argv[])
             product_name[0] = '\0';
             read(0, product_name, sizeof(product_name));
             product_name[strcspn(product_name, "\n")] = '\0';
-            printf("%s inpit\n", product_name);
+            //printf("%s inpit\n", product_name);
             if(send(socked_desc, product_name, sizeof(product_name), 0) <= 0) 
             {
                 perror("[client]Eroare la send() spre server.\n");

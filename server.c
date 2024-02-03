@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <mysql/mysql.h>
 #include <ctype.h>
+#include <sys/time.h>
 #define PORT 8888
 
 extern int errno;
@@ -25,11 +26,63 @@ int socket_desc, nrThreads;
 Thread *threadPool;
 pthread_mutex_t mlock=PTHREAD_MUTEX_INITIALIZER;
 
+char* decryption_one_time_pad(char str[])
+{
+    char key[255] = "THISISASTRINGUSEDASAKEYTOENCRYPTPASSWORD";
+    int cifru[41];
+    cifru[0] = '\0';
+    int len = strlen(str);
+    char *cifrustr = (char *)malloc(len + 1);
+    for(int i = 0; i < strlen(str); i++)
+    {
+        cifru[i] = str[i] - 'A' - (key[i]-'A');
+    }
+
+    for(int i = 0; i < strlen(str); i++)
+    {
+        if(cifru[i] < 0)
+            cifru[i] = cifru[i] + 26;
+    }
+
+    for(int i = 0; i < strlen(str); i++)
+    {
+        int x = cifru[i] + 'A';
+        cifrustr[i] = (char)x;
+    }
+    cifrustr[len] = '\0'; 
+    return cifrustr;
+}
+
+char* encryption_one_time_pad(char str[])
+{
+    char key[255] = "THISISASTRINGUSEDASAKEYTOENCRYPTPASSWORD";
+    int cifru[41];
+    cifru[0] = '\0';
+    int len = strlen(str);
+    char *cifrustr = (char *)malloc(len + 1);
+    for(int i = 0; i < len; i++)
+    {
+        cifru[i] = str[i] - 'A' + key[i]-'A';
+    }
+
+    for(int i = 0; i < len; i++)
+    {
+        if(cifru[i] > 25)
+            cifru[i] = cifru[i] - 26;
+    }
+
+    for(int i = 0; i < len; i++)
+    {
+        int x = cifru[i] + 'A';
+        cifrustr[i] = (char)x;
+    }
+    cifrustr[len] = '\0'; 
+    return cifrustr;
+}
 void raspunde(int cl, int idThread)
 {
     int loginStatus = 0, logoutStatus = 1, isProv, chsdProv, flag = -1, isincart= 0, id_prov = -1, id_user = -1, iszero=-1;
     char user_name[255], message[2048];
-    
     while(1)
     {
         int nr = 0;
@@ -125,7 +178,22 @@ void raspunde(int cl, int idThread)
                             }
                             else
                             {
-                                snprintf(query, sizeof(query), "UPDATE users SET %s = '%s' WHERE user_name like '%s' ;", data[i], info, user_name);
+                                if(strstr(data[i], "password"))
+                                {
+                                    int len = strlen(info);
+                                    for(int i = 0; i< len; i++)
+                                    {
+                                        info[i] = toupper(info[i]);
+                                    }
+                                    char *pass_encr = encryption_one_time_pad(info);
+                                    printf("%s\n", pass_encr); 
+                                    snprintf(query, sizeof(query), "UPDATE users SET %s = '%s' WHERE user_name like '%s' ;", data[i], pass_encr, user_name);
+                                
+                                }
+                                else 
+                                {
+                                    snprintf(query, sizeof(query), "UPDATE users SET %s = '%s' WHERE user_name like '%s' ;", data[i], info, user_name);
+                                }
                                 printf("%s", query);
                                 if(mysql_query(con, query)!=0)
                                 {
@@ -278,7 +346,14 @@ void raspunde(int cl, int idThread)
                     printf("%ld\n", strlen(password));
                     if(strlen(password) > 1)
                     {
-                        snprintf(query, sizeof(query), "SELECT password FROM users WHERE password LIKE '%s' and user_name LIKE '%s' ;", password, user_name);
+                        int len = strlen(password);
+                        int count;
+                        for(int i = 0; i< len; i++)
+                        {
+                            password[i] = toupper(password[i]);
+                        }
+                        printf("%s aici\n", password);
+                        snprintf(query, sizeof(query), "SELECT password FROM users WHERE user_name LIKE '%s' ;", user_name);
                         if (mysql_query(con, query) != 0) 
                         {
                             fprintf(stderr, "Error: %s\n", mysql_error(con));
@@ -303,16 +378,36 @@ void raspunde(int cl, int idThread)
                                 printf ("[Thread %d]Mesajul a fost trasmis cu succes. in WHILE\n",idThread);
                             } else {
                                 MYSQL_ROW row;
+                                count = 0;
                                 while ((row = mysql_fetch_row(result)) != NULL) {
-                                    printf("User found: %s\n", row[0]); 
+                                    char *pass_encr = decryption_one_time_pad(row[0]); 
+                                    printf("%s si aici\n", pass_encr);
+                                    for(int i = 0; i < len; i++)
+                                    {
+                                        if(pass_encr[i] != password[i])
+                                            count++;
+                                    }
                                 }
-                                snprintf(message, sizeof(message), "Your data is valid");
-                                if(send(cl, message, sizeof(message), 0) < 0) 
+                                
+                                if(count > 0)
                                 {
-                                    fprintf(stderr, "[client]Error sending to  client user_name\n");
+                                    snprintf(message, sizeof(message), "The data is NOT valid! Password is incorrect. Try again!");
+                                    if(send(cl, message, sizeof(message), 0) < 0) 
+                                    {
+                                        fprintf(stderr, "[client]Error sending to  client user_name\n");
+                                    }
+                                    printf ("[Thread %d]Mesajul a fost trasmis cu succes. in WHILE\n",idThread);
                                 }
-                                printf ("[Thread %d]Mesajul a fost trasmis cu succes.IN WHILE\n",idThread);
-                                break;
+                                else 
+                                {
+                                    snprintf(message, sizeof(message), "Your data is valid");
+                                    if(send(cl, message, sizeof(message), 0) < 0) 
+                                    {
+                                        fprintf(stderr, "[client]Error sending to  client user_name\n");
+                                    }
+                                    printf ("[Thread %d]Mesajul a fost trasmis cu succes.IN WHILE\n",idThread);
+                                    break;
+                                }
                             }
                             mysql_free_result(result);
                         }
@@ -1107,7 +1202,7 @@ void raspunde(int cl, int idThread)
                         my_ulonglong num_rows = mysql_num_rows(result);
                         if (num_rows == 0) 
                         {
-                             printf("[Thread %d] client wants to place a order\n", idThread);
+                            printf("[Thread %d] client wants to place a order\n", idThread);
                             snprintf(message, sizeof(message), "Add a product in your list first");
                             if(send(cl, message, sizeof(message), 0) <= 0) 
                             {
@@ -1886,7 +1981,13 @@ void raspunde(int cl, int idThread)
                                 printf("%ld\n", strlen(answer));
                                 if(strlen(answer) > 1)
                                 {
-                                    snprintf(query, sizeof(query), "SELECT password FROM users WHERE password LIKE '%s' and user_name LIKE '%s' ;", answer, user_name);
+                                    int len = strlen(answer);
+                                    int count;
+                                    for(int i = 0; i< len; i++)
+                                    {
+                                        answer[i] = toupper(answer[i]);
+                                    }
+                                    snprintf(query, sizeof(query), "SELECT password FROM users WHERE user_name LIKE '%s' ;", user_name);
                                     if (mysql_query(con, query) != 0) 
                                     {
                                         fprintf(stderr, "Error: %s\n", mysql_error(con));
@@ -1911,16 +2012,34 @@ void raspunde(int cl, int idThread)
                                             printf ("[Thread %d]Mesajul a fost trasmis cu succes. in WHILE\n",idThread);
                                         } else {
                                             MYSQL_ROW row;
+                                            count = 0;
                                             while ((row = mysql_fetch_row(result)) != NULL) {
-                                                printf("User found: %s\n", row[0]); 
+                                                char *pass_encr = decryption_one_time_pad(row[0]); 
+                                                for(int i = 0; i < len; i++)
+                                                {
+                                                    if(pass_encr[i] != answer[i])
+                                                        count++;
+                                                }
                                             }
-                                            snprintf(message, sizeof(message), "Your data is valid");
-                                            if(send(cl, message, sizeof(message), 0) < 0) 
+                                            if(count > 0)
                                             {
-                                                fprintf(stderr, "[client]Error sending to  client user_name\n");
+                                                snprintf(message, sizeof(message), "The data is NOT valid! Password is incorrect. Try again!");
+                                                if(send(cl, message, sizeof(message), 0) < 0) 
+                                                {
+                                                    fprintf(stderr, "[client]Error sending to  client user_name\n");
+                                                }
+                                                printf ("[Thread %d]Mesajul a fost trasmis cu succes. in WHILE\n",idThread);
                                             }
-                                            printf ("[Thread %d]Mesajul a fost trasmis cu succes.IN WHILE\n",idThread);
-                                            break;
+                                            else 
+                                            {
+                                                snprintf(message, sizeof(message), "Your data is valid");
+                                                if(send(cl, message, sizeof(message), 0) < 0) 
+                                                {
+                                                    fprintf(stderr, "[client]Error sending to  client user_name\n");
+                                                }
+                                                printf ("[Thread %d]Mesajul a fost trasmis cu succes.IN WHILE\n",idThread);
+                                                break;
+                                            }
                                         }
                                         mysql_free_result(result);
                                     }
